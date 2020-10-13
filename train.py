@@ -73,7 +73,6 @@ best_error = -1
 n_iter = 0
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-
 def main():
     global best_error, n_iter, device
     args = parser.parse_args()
