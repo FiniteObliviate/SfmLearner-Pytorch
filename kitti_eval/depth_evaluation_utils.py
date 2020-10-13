@@ -124,6 +124,7 @@ def read_scene_data(data_root, test_list, seq_length=3, step=1, use_gps=True):
     for sample in tqdm(test_list):
         tgt_img_path = data_root/sample
         date, scene, cam_id, _, index = sample[:-4].split('/')
+        
         scene_length = len(tgt_img_path.parent.files('*.png'))
 
         ref_indices = shift_range + np.clip(int(index), step*demi_length, scene_length - step*demi_length - 1)
