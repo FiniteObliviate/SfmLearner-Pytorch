@@ -14,11 +14,11 @@ def photometric_reconstruction_loss(tgt_img, ref_imgs, intrinsics,
 
         reconstruction_loss = 0
         b, _, h, w = depth.size()
-        print("depth.size():\n", depth.size())
+        # print("depth.size():\n", depth.size())
         downscale = tgt_img.size(2)/h
-        print("downscale:", downscale)
-        print("h:", h)
-        print("\n")
+        # print("downscale:", downscale)
+        # print("h:", h)
+        # print("\n")
 
         tgt_img_scaled = F.interpolate(tgt_img, (h, w), mode='area')
         ref_imgs_scaled = [F.interpolate(ref_img, (h, w), mode='area') for ref_img in ref_imgs]

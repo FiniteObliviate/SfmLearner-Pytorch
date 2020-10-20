@@ -84,7 +84,7 @@ def main():
 
         if args.output_disp:
             disp = (255*tensor2array(output, max_value=None, colormap='bone')).astype(np.uint8)
-            # imsave(output_dir/'{}_disp{}'.format(file_name, file_ext), np.transpose(disp, (1,2,0)))
+            imsave(output_dir/'{}_disp{}'.format(file_name, file_ext), np.transpose(disp, (1,2,0)))
         if args.output_depth:
             depth = 1/output
             
@@ -94,40 +94,59 @@ def main():
             # imsave(output_dir/'{}_depth{}'.format(file_name, file_ext), np.transpose(depth, (1,2,0)))
 
             # added by ZYD
-            depth = 100*depth
-            print("output:\n", output)
-            tensor = depth.detach().cpu()
-            arr = tensor.squeeze().numpy()
-            print("array's mean:\n", np.mean(arr))
-            gt = tifffile.imread('/home/zyd/respository/sfmlearner_results/endo_testset/left_depth_map_d7k1_000000.tiff')
+            gt = tifffile.imread('/home/zyd/respository/sfmlearner_results/endo_testset/left_depth_map_d7k4_000000.tiff')
             gt = gt[:, :, 2]
             # np.savetxt('gt.txt',gt,fmt='%0.8f')
             print("groundtruth:\n", gt)
             print("gt's mean:\n", np.mean(gt))
+
+            tensor = depth.detach().cpu()
+            arr = tensor.squeeze().numpy()
+            print("array's mean:\n", np.mean(arr))
+
+            mask = (gt > 1e-3)
+            gt_mask = gt[mask]
+            arr_mask = arr[mask]
+
+
+            scale_factor = np.median(gt_mask)/np.median(arr_mask)
+            print("scale_factor:\n", scale_factor)
+
+            arr = scale_factor*arr
+
             rmse = np.sqrt(mean_squared_error(arr, gt))
             print("RMSE without masks:\n", rmse)
             
-            esum, count = 0, 0
+            RMSE, logR, AbsRel, SqRel, count = 0, 0, 0, 0, 0
             b1, b2, b3 = 0, 0, 0
              
             for i in range(1024):
                 for j in range(1280):
-                    if (gt[i, j] > 0):
-                        esum = esum + ( gt[i, j] - arr[i, j] )**2
+                    if (gt[i, j] > 1e-3):
+                        RMSE = RMSE + ( gt[i, j] - arr[i, j] )**2
+                        logR = logR + ( np.log(gt[i, j]) - np.log(arr[i, j]) )**2
+                        AbsRel = AbsRel + abs( gt[i, j] - arr[i, j] ) / gt[i, j]
+                        SqRel = SqRel + ( ( gt[i, j] - arr[i, j] )**2 ) / gt[i, j]
                         count = count + 1
-                        if (0.75*gt[i, j] < arr[i, j] < 1.25*gt[i, j]):
+                        if (0.75*gt[i, j] < arr[i, j] and arr[i, j] < 1.25*gt[i, j]):
                             b1 = b1 + 1
-                        if (0.4375*gt[i, j] < arr[i, j] < 1.5625*gt[i, j]):
+                        if (0.4375*gt[i, j] < arr[i, j] and arr[i, j] < 1.5625*gt[i, j]):
                             b2 = b2 + 1
-                        if (0.046875*gt[i, j] < arr[i, j] < 1.953125*gt[i, j]):
-                            b3 = b3 + 1
-            
+                        if (0.046875*gt[i, j] < arr[i, j] and arr[i, j] < 1.953125*gt[i, j]):
+                            b3 = b3 + 1           
+
+            RMSE = (RMSE / count)**0.5
+            logR = (logR / count)**0.5
+            AbsRel = AbsRel / count
+            SqRel = SqRel / count
+            print("RMSE = ", RMSE)
+            print("logR = ", logR)
+            print("AbsRel = ", AbsRel)
+            print("SqRel = ", SqRel)
             print("1.25 percentage: ", b1 / count)
             print("1.25^2 percentage: ", b2 / count)
             print("1.25^3 percentage: ", b3 / count)
-            # print("sum = ", esum)
-            esum = esum / count
-            print("sqrt(sum) = RMSE = ", esum**0.5)
+
 
 """
             mask = (gt > 0) # 用于去除深度的depth==0 即空洞
