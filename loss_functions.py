@@ -96,9 +96,10 @@ def smooth_loss(pred_map):
 def compute_errors(gt, pred, crop=True):
     abs_diff, abs_rel, sq_rel, a1, a2, a3 = 0,0,0,0,0,0
     batch_size = gt.size(0)
+    crop = False  # delete crop by ZYD
 
     '''
-    crop used by Garg ECCV16 to reprocude Eigen NIPS14 results
+    used by Garg ECCV16 to reprocude Eigen NIPS14 results
     construct a mask of False values, with the same size as target
     and then set to True values inside the crop
     '''
@@ -109,12 +110,14 @@ def compute_errors(gt, pred, crop=True):
         crop_mask[y1:y2,x1:x2] = 1
 
     for current_gt, current_pred in zip(gt, pred):
-        valid = (current_gt > 0) & (current_gt < 80)
+        # valid = (current_gt > 0) & (current_gt < 80)
+        valid = (current_gt > 0)  # ZYD
         if crop:
             valid = valid & crop_mask
 
-        valid_gt = current_gt[valid]
-        valid_pred = current_pred[valid].clamp(1e-3, 80)
+        valid_gt = current_gt[valid]  # ZYD
+        # valid_pred = current_pred[valid].clamp(1e-3, 80)
+        valid_pred = current_pred[valid]
 
         valid_pred = valid_pred * torch.median(valid_gt)/torch.median(valid_pred)
 

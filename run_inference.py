@@ -84,27 +84,27 @@ def main():
 
         if args.output_disp:
             disp = (255*tensor2array(output, max_value=None, colormap='bone')).astype(np.uint8)
-            imsave(output_dir/'{}_disp{}'.format(file_name, file_ext), np.transpose(disp, (1,2,0)))
+            # imsave(output_dir/'{}_disp{}'.format(file_name, file_ext), np.transpose(disp, (1,2,0)))
         if args.output_depth:
             depth = 1/output
             
-            # depth = (255*tensor2array(depth, max_value=10, colormap='rainbow')).astype(np.uint8)
-            # depth = (2550*tensor2array(depth, max_value=10, colormap='bone')).astype(np.uint8)
-            # print(depth.shape)
-            # imsave(output_dir/'{}_depth{}'.format(file_name, file_ext), np.transpose(depth, (1,2,0)))
+            depth = (255*tensor2array(depth, max_value=10, colormap='rainbow')).astype(np.uint8)
+            depth = (2550*tensor2array(depth, max_value=10, colormap='bone')).astype(np.uint8)
+            print(depth.shape)
+            imsave(output_dir/'{}_depth{}'.format(file_name, file_ext), np.transpose(depth, (1,2,0)))
 
             # added by ZYD
-            gt = tifffile.imread('/home/zyd/respository/sfmlearner_results/endo_testset/left_depth_map_d7k4_000000.tiff')
+            gt = tifffile.imread('/home/zyd/respository/sfmlearner_results/endo_testset/left_depth_map_d3k1_000000.tiff')
             gt = gt[:, :, 2]
-            # np.savetxt('gt.txt',gt,fmt='%0.8f')
+            # np.savetxt('d4k1_gt.txt',gt,fmt='%0.8f')
             print("groundtruth:\n", gt)
             print("gt's mean:\n", np.mean(gt))
 
             tensor = depth.detach().cpu()
             arr = tensor.squeeze().numpy()
-            print("array's mean:\n", np.mean(arr))
 
             mask = (gt > 1e-3)
+            # mask = np.logical_and(gt > 1e-3, gt < 80)
             gt_mask = gt[mask]
             arr_mask = arr[mask]
 
@@ -113,6 +113,8 @@ def main():
             print("scale_factor:\n", scale_factor)
 
             arr = scale_factor*arr
+            print("array's mean:\n", np.mean(arr))
+            np.savetxt('d4k1_pred_depth_1epoch.txt',arr,fmt='%0.8f')
 
             rmse = np.sqrt(mean_squared_error(arr, gt))
             print("RMSE without masks:\n", rmse)
@@ -122,6 +124,7 @@ def main():
              
             for i in range(1024):
                 for j in range(1280):
+                    # if (1e-3 < gt[i, j] < 80):
                     if (gt[i, j] > 1e-3):
                         RMSE = RMSE + ( gt[i, j] - arr[i, j] )**2
                         logR = logR + ( np.log(gt[i, j]) - np.log(arr[i, j]) )**2
@@ -139,6 +142,7 @@ def main():
             logR = (logR / count)**0.5
             AbsRel = AbsRel / count
             SqRel = SqRel / count
+            print("count = ", count)
             print("RMSE = ", RMSE)
             print("logR = ", logR)
             print("AbsRel = ", AbsRel)
